@@ -1,46 +1,40 @@
 import sys
 
-
-def shift(a, n):
-    size = 2**16
-    n = n % size
-    return (a << n | a >> (size-n)) % 2**size
+BLOCK_SIZE = 16
 
 
-def to_bytes(a):
-    res = bytearray()
-    size = 2**8
-    while a > size:
-        res.append(a % size)
-        a = a // size
-    return res
+def lshift(a, n, bsize = BLOCK_SIZE):
+    size = 2**bsize
+    n = n % bsize
+    return (a << n | a >> (bsize-n)) % size
 
 
-def mpl(a, b):
-    return (a+b) % (2**8)
+def rshift(a, n, bsize = BLOCK_SIZE):
+    return lshift(-a, n, bsize = bsize)
 
 
-def mml(a, b):
-    return (a*b) % (2**8+1)
+def mpl(a, b, bsize = BLOCK_SIZE):
+    return (a+b) % (2**bsize)
 
 
-def ainv(a):
-    return (2**8)-a
+def mml(a, b, bsize = BLOCK_SIZE):
+    return (a*b) % (2**bsize+1)
 
 
-def minv(a):
-    return pow(a, ((2**8+1)-2), (2**8+1))
+def ainv(a, bsize = BLOCK_SIZE):
+    return (2**bsize)-a
+
+
+def minv(a, bsize = BLOCK_SIZE):
+    return pow(a, ((2**bsize+1)-2), (2**bsize+1))
 
 
 def split(arr, size):
-    arrs = []
-    while len(arr) > size:
-        pice = arr[:size]
-        arrs.append(pice)
-        arr = arr[size:]
-    pice = arr[:size]
-    arrs.append(pice)
-    return arrs
+    return divarr(arr, len(arr)//size)
+
+
+def divarr(arr, parts):
+    return [arr[i::parts] for i in range(parts)]
 
 
 def get_blocks_from_file(filepath):
@@ -82,19 +76,31 @@ def crypt(block, keys):
 
 
 def get_keys_from_file(filepath):
-    file = open(filepath, "rb")
+    """file = open(filepath, "rb")
     keys = []
     data = file.read()
-    data = data[:16]
+    data = data[:16].hex()
     print(data)
-    temp = int.from_bytes(data, "little")
-    print(temp)
-    print(to_bytes(temp))
-    print(int.from_bytes(to_bytes(temp),'little'))
-    for i in range(7):
-        keys.append([int.from_bytes(a, "little") for a in split(data, 2)])
-        temp = shift(temp, 25)
-        #data = temp.to_bytes(16, "little")
+    #keys = divarr(data, 8)
+    #print(keys)"""
+    keys = [0b0000000000000001,
+            0b0000000000000010,
+            0b0000000000000011,
+            0b0000000000000100,
+            0b0000000000000101,
+            0b0000000000000110,
+            0b0000000000000111,
+            0b0000000000001000]
+    numkeys = 0;
+    for a, i in enumerate(keys):
+        numkeys = numkeys + a*(2**16)**(len(keys)-i+1)
+        print(hex(a))
+    print(bin(numkeys))
+    print(
+        '0b10000000000000010000000000000001100000000000001000000000000000101000000000000011000000000000001110000000000001000')
+    print(0b10000000000000000, 2**16)
+    print(bin(0b0000000000000111*0b10000000000000000+0b0000000000001000))
+    print('0b110000000000000010000000000000001100000000000001000000000000000101000000000000011000000000000001110000000000001000')
     """for i in range(len(keys)):
         if i == 0:
             dkeys.append([minv(keys[8 - i][0]),
@@ -117,6 +123,7 @@ def get_keys_from_file(filepath):
                           minv(keys[8 - i][3])])"""
     return keys #, dkeys
 
-
 #blocks = get_blocks_from_file("res/image.jpg")
-keys = get_keys_from_file("res/image.jpg")
+#print(2**16)
+keys = get_keys_from_file('res/image.jpg')
+#print(keys)
