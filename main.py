@@ -30,12 +30,32 @@ def minv(a, bsize = BLOCK_SIZE):
 
 
 def split(arr, size):
-    return divarr(arr, len(arr)//size)
+    res = []
+    parts = len(arr)//size+1
+    for i in range(parts):
+        res.append(list(reversed(arr[i*size:(i+1)*size])))
+    return res
 
 
 def divarr(arr, parts):
     return [arr[i::parts] for i in range(parts)]
 
+
+def merge_int(arr):
+    numkeys = 0
+    for i, a in enumerate(arr):
+        numkeys = numkeys + a * ((2 ** 16) ** (len(arr) - i - 1))
+    return numkeys
+
+
+def split_int(val):
+    arr = []
+    lval = val
+    for i in range(8):
+        arr.append(lval%(2**16))
+        lval = lval >> 16
+    arr.reverse()
+    return arr
 
 def get_blocks_from_file(filepath):
     file = open(filepath, "rb")
@@ -91,36 +111,12 @@ def get_keys_from_file(filepath):
             0b0000000000000110,
             0b0000000000000111,
             0b0000000000001000]
-    numkeys = 0;
-    for a, i in enumerate(keys):
-        numkeys = numkeys + a*(2**16)**(len(keys)-i+1)
-        print(hex(a))
-    print(bin(numkeys))
-    print(
-        '0b10000000000000010000000000000001100000000000001000000000000000101000000000000011000000000000001110000000000001000')
-    print(0b10000000000000000, 2**16)
-    print(bin(0b0000000000000111*0b10000000000000000+0b0000000000001000))
-    print('0b110000000000000010000000000000001100000000000001000000000000000101000000000000011000000000000001110000000000001000')
-    """for i in range(len(keys)):
-        if i == 0:
-            dkeys.append([minv(keys[8 - i][0]),
-                          ainv(keys[8 - i][1]),
-                          ainv(keys[8 - i][2]),
-                          minv(keys[8 - i][3]),
-                          keys[8 - i - 1][4],
-                          keys[8 - i - 1][5]])
-        elif i < 8:
-            dkeys.append([minv(keys[8 - i][0]),
-                          ainv(keys[8 - i][2]),
-                          ainv(keys[8 - i][1]),
-                          minv(keys[8 - i][3]),
-                          keys[8 - i - 1][4],
-                          keys[8 - i - 1][5]])
-        elif i == 8:
-            dkeys.append([minv(keys[8 - i][0]),
-                          ainv(keys[8 - i][1]),
-                          ainv(keys[8 - i][2]),
-                          minv(keys[8 - i][3])])"""
+    keys_num = lshift(merge_int(keys), 25, bsize=128)
+    for i in range(6):
+        keys.extend(split_int(keys_num))
+        keys_num = lshift(keys_num, 25, bsize=128)
+    for a in split(keys[:52], 6):
+        print(list(reversed([hex(b) for b in a])))
     return keys #, dkeys
 
 #blocks = get_blocks_from_file("res/image.jpg")
