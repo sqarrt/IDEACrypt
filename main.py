@@ -33,7 +33,7 @@ def split(arr, size):
     res = []
     parts = len(arr)//size+1
     for i in range(parts):
-        res.append(list(reversed(arr[i*size:(i+1)*size])))
+        res.append(arr[i*size:(i+1)*size])
     return res
 
 
@@ -41,32 +41,61 @@ def divarr(arr, parts):
     return [arr[i::parts] for i in range(parts)]
 
 
-def merge_int(arr):
+def merge_int(arr, bsize = 16):
     numkeys = 0
     for i, a in enumerate(arr):
-        numkeys = numkeys + a * ((2 ** 16) ** (len(arr) - i - 1))
+        numkeys = numkeys + a * ((2 ** bsize) ** (len(arr) - i - 1))
     return numkeys
 
 
-def split_int(val):
+def split_int(val, bsize = 8):
     arr = []
     lval = val
-    for i in range(8):
-        arr.append(lval%(2**16))
+    for i in range(bsize):
+        arr.append(lval % (2**16))
         lval = lval >> 16
     arr.reverse()
     return arr
 
+
+def split_int_(val, bsize):
+    numr = (len(bin(val))-2)
+    least = numr % bsize
+    parts = numr//bsize if least == 0 else numr//bsize+1
+    arr = []
+    lval = val
+    for i in range(parts):
+        arr.append(lval % (2**bsize))
+        lval = lval >> bsize
+    arr.reverse()
+    return arr
+
+
 def get_blocks_from_file(filepath):
     file = open(filepath, "rb")
     data = file.read()
+    print(data.hex())
     blocks = split(data, 8)
-    for i in range(len(blocks)):
-        blocks[i] = bytearray(blocks[i])
-    if len(blocks[-1]) != 8:
-        filler = len(blocks[-1])
-        blocks[-1].extend(bytes([filler]*(8-filler)))
+    blocks = [split_int(merge_int(a, bsize = 8), bsize = 4) for a in blocks]
+    file.close()
     return blocks
+
+
+def write_file_from_blocks(blocks, filepath):
+    file = open(filepath, "wb")
+    ba = bytearray()
+    for a in blocks:
+        bytess = split_int_(merge_int(a, 16), 8)
+        if(a != blocks[-1]):
+            while len(bytess) < 8:
+                bytess.reverse()
+                bytess.append(0)
+                bytess.reverse()
+        for b in bytess:
+            ba.append(b)
+    print(ba.hex())
+    file.write(ba)
+    file.close()
 
 
 def crypt(block, keys):
@@ -95,22 +124,23 @@ def crypt(block, keys):
     return out
 
 
+def crypt_blocks(blocks, keys):
+    cblocks = []
+    for a in blocks:
+        cblock = crypt(a, keys)
+        cblocks.append(cblock)
+    return cblocks
+
+
 def get_keys_from_file(filepath):
     file = open(filepath, "rb")
-    #keys = split_int(int.from_bytes(file.read()[:16], byteorder = 'big'))
-    keys = [0x0001,
-            0x0002,
-            0x0003,
-            0x0004,
-            0x0005,
-            0x0006,
-            0x0007,
-            0x0008]
+    keys = split_int(int.from_bytes(file.read()[:16], byteorder = 'big'), bsize = 8)
+    file.close()
     keys_num = lshift(merge_int(keys), 25, bsize=128)
     for i in range(6):
-        keys.extend(split_int(keys_num))
+        keys.extend(split_int(keys_num, bsize = 8))
         keys_num = lshift(keys_num, 25, bsize=128)
-    res = [list(reversed(a)) for a in split(keys[:52], 6)]
+    res = [a for a in split(keys[:52], 6)]
     dkeys = []
     for i, a in enumerate(res):
         if i == 8:
@@ -138,12 +168,11 @@ def get_keys_from_file(filepath):
     dkeys.reverse()
     return res, dkeys
 
-#blocks = get_blocks_from_file("res/image.jpg")
-#print(2**16)
-keys = get_keys_from_file('res/image.jpg')
-encoded = [43225,
-           30640,
-           6969,
-           3326]
-decoded = crypt(encoded, keys[1])
-print('decoded block: ', list([hex(a) for a in decoded]))
+
+keys = get_keys_from_file('res/key.gif')
+blocks = get_blocks_from_file('res/source.jpg')
+cblocks = crypt_blocks(blocks, keys[0])
+enblocks = crypt_blocks(cblocks, keys[1])
+write_file_from_blocks(enblocks, 'res/res_gif.jpg')
+
+
