@@ -96,30 +96,54 @@ def crypt(block, keys):
 
 
 def get_keys_from_file(filepath):
-    """file = open(filepath, "rb")
-    keys = []
-    data = file.read()
-    data = data[:16].hex()
-    print(data)
-    #keys = divarr(data, 8)
-    #print(keys)"""
-    keys = [0b0000000000000001,
-            0b0000000000000010,
-            0b0000000000000011,
-            0b0000000000000100,
-            0b0000000000000101,
-            0b0000000000000110,
-            0b0000000000000111,
-            0b0000000000001000]
+    file = open(filepath, "rb")
+    #keys = split_int(int.from_bytes(file.read()[:16], byteorder = 'big'))
+    keys = [0x0001,
+            0x0002,
+            0x0003,
+            0x0004,
+            0x0005,
+            0x0006,
+            0x0007,
+            0x0008]
     keys_num = lshift(merge_int(keys), 25, bsize=128)
     for i in range(6):
         keys.extend(split_int(keys_num))
         keys_num = lshift(keys_num, 25, bsize=128)
-    for a in split(keys[:52], 6):
-        print(list(reversed([hex(b) for b in a])))
-    return keys #, dkeys
+    res = [list(reversed(a)) for a in split(keys[:52], 6)]
+    dkeys = []
+    for i, a in enumerate(res):
+        if i == 8:
+            rdkey = [minv(a[0]),
+                     ainv(a[1]),
+                     ainv(a[2]),
+                     minv(a[3]),
+                     res[i-1][4],
+                     res[i-1][5]]
+            dkeys.append(rdkey)
+        elif i == 0:
+            rdkey = [minv(a[0]),
+                     ainv(a[1]),
+                     ainv(a[2]),
+                     minv(a[3])]
+            dkeys.append(rdkey)
+        else:
+            rdkey = [minv(a[0]),
+                     ainv(a[2]),
+                     ainv(a[1]),
+                     minv(a[3]),
+                     res[i-1][4],
+                     res[i-1][5]]
+            dkeys.append(rdkey)
+    dkeys.reverse()
+    return res, dkeys
 
 #blocks = get_blocks_from_file("res/image.jpg")
 #print(2**16)
 keys = get_keys_from_file('res/image.jpg')
-#print(keys)
+encoded = [43225,
+           30640,
+           6969,
+           3326]
+decoded = crypt(encoded, keys[1])
+print('decoded block: ', list([hex(a) for a in decoded]))
