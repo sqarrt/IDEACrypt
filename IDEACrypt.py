@@ -170,7 +170,6 @@ def get_keys_from_file(filepath):
 #check for target of execution
 if __name__ == "__main__":
     keys = get_keys_from_file('res/key.gif')
-    blocks = get_blocks_from_file('res/source.jpg')
-    cblocks = crypt_blocks(blocks, keys[0])
-    enblocks = crypt_blocks(cblocks, keys[1])
-    write_file_from_blocks(enblocks, 'res/res_gif.jpg')
+    blocks = get_blocks_from_file('res/res_gif_c.jpg')
+    enblocks = crypt_blocks(blocks, keys[1])
+    write_file_from_blocks(enblocks, 'res/res_gif2.jpg')

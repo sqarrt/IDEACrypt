@@ -23,30 +23,28 @@ if __name__ == "__main__":
     btn.grid(column = 0, row = 5)
 
     def entry1_clicked(event):
+        entry1.delete(0, 'end')
         entry1.insert(0, filedialog.askopenfilename() )
 
     def entry2_clicked(event):
+        entry2.delete(0, 'end')
         entry2.insert(0, filedialog.askopenfilename() )
-
-    def chk_toggled(event):
-        messagebox.showerror('TITLE', var.get())
 
     def btn_clicked(event):
         file = entry1.get()
-        key = entry1.get()
+        key = entry2.get()
         decode = var.get()
         if file != '' and key != '':
             keys = IDEACrypt.get_keys_from_file(key)
             blocks = IDEACrypt.get_blocks_from_file(file)
             keys = keys[0] if not decode else keys[1]
             cblocks = IDEACrypt.crypt_blocks(blocks, keys)
-            IDEACrypt.write_file_from_blocks(cblocks, file+'_crypted')
+            IDEACrypt.write_file_from_blocks(cblocks, file.split('.')[0]+'_c.'+file.split('.')[1])
         else:
             messagebox.showinfo("Ошибка!", "Введены не все данные")
 
     entry1.bind('<Button-1>', entry1_clicked)
     entry2.bind('<Button-1>', entry2_clicked)
-    chk.bind('<Button-1>', chk_toggled)
     btn.bind('<Button-1>', btn_clicked)
 
     window.mainloop()
