@@ -31,7 +31,7 @@ def minv(a, bsize = BLOCK_SIZE):
 
 def split(arr, size):
     res = []
-    parts = len(arr)//size+1
+    parts = len(arr)//size if len(arr)%size == 0 else len(arr)//size+1
     for i in range(parts):
         res.append(arr[i*size:(i+1)*size])
     return res
@@ -80,6 +80,28 @@ def get_blocks_from_file(filepath):
     return b
 
 
+def blocks_to_bytes(b):
+    ba = bytearray()
+    for a in b:
+        bytess = split_int_(merge_int(a, 16), 8)
+        if a != b[-1]:
+            while len(bytess) < 8:
+                bytess.reverse()
+                bytess.append(0)
+                bytess.reverse()
+        for c in bytess:
+            ba.append(c)
+    return ba
+
+
+def compare_colls(str1, str2):
+    diffs = []
+    for i, a in enumerate(zip(str1, str2)):
+        if a[0]!=a[1]:
+           diffs.append([i, a[0], a[1]])
+    return diffs
+
+
 def write_file_from_blocks(b, filepath):
     file = open(filepath, "wb")
     ba = bytearray()
@@ -97,7 +119,7 @@ def write_file_from_blocks(b, filepath):
 
 
 def crypt(block, k):
-    d = block
+    d = block[:]
     k = k
     for i in range(0, 8):
         ka = mml(d[0], k[i][0])
@@ -169,7 +191,25 @@ def get_keys_from_file(filepath):
 
 #check for target of execution
 if __name__ == "__main__":
-    keys = get_keys_from_file('res/key.gif')
-    blocks = get_blocks_from_file('res/res_gif_c.jpg')
-    enblocks = crypt_blocks(blocks, keys[1])
-    write_file_from_blocks(enblocks, 'res/res_gif2.jpg')
+    keys = get_keys_from_file('res/source.jpg')
+    blocks = tuple(get_blocks_from_file('res/source.jpg'))
+    cblocks = crypt_blocks(blocks, keys[0])
+    enblocks = crypt_blocks(cblocks, keys[1])
+
+    for a in compare_colls(blocks, enblocks):
+        print("check it: "+str(a[0])+" index block \n || keys were:")
+        k = keys[0][0]
+        k.extend(keys[0][1][0:2])
+        print(list([hex(a) for a in k]))
+        b = blocks[a[0]]
+        print(" || block was: ")
+        print(list([hex(a) for a in b]))
+        cb = crypt(b, keys[0])
+        print(" || crypted block was: ")
+        print(list([hex(a) for a in cb]))
+        enb = crypt(cb, keys[1])
+        print(" || encrypted block was: ")
+        print(list([hex(a) for a in enb]))
+        print("\n")
+
+    write_file_from_blocks(enblocks, 'res/res_gif1.jpg')
