@@ -129,10 +129,24 @@ def crypt(block, k):
         kd = mml(d[3], k[i][3])
         ke = ka ^ kc
         kf = kb ^ kd
+        """
         d[0] = ka ^ mml(mpl(kf, mml(ke, k[i][4])), k[i][5])
         d[1] = kc ^ mml(mpl(kf, mml(ke, k[i][4])), k[i][5])
         d[2] = kb ^ mpl(mml(ke, k[i][4]), mml(mpl(mml(ke, k[i][4]), kf), k[i][5]))
         d[3] = kd ^ mpl(mml(ke, k[i][4]), mml(mpl(mml(ke, k[i][4]), kf), k[i][5]))
+        """
+        ke = mml(ke, k[i][4])
+        kf = mpl(ke, kf)
+        kf = mml(kf, k[i][5])
+        ke = mpl(ke, kf)
+        d[0] = ka ^ kf
+        d[1] = kb ^ ke
+        d[2] = kc ^ kf
+        d[3] = kd ^ ke
+
+        temp = d[1]
+        d[1] = d[2]
+        d[2] = temp
     d1 = mml(d[0], k[8][0])
     d2 = mpl(d[2], k[8][1])
     d3 = mpl(d[1], k[8][2])
@@ -159,9 +173,10 @@ def get_keys_from_file(filepath):
     k = split([int.from_bytes(a, byteorder = 'big') for a in split(file, 2)], 8)
     #we've got now list of lists with size 8, and now we gonna XOR every inner list with each other
     k = split_int_(reduce(lambda k, a: k ^ merge_int(a), k, 0), 16)
+    #k = [a ^ 0x0DAE for a in k]
     #and then to avoid 0-valued key blocks we'll OR every of them by 0b101010101010101
-    k = [a | 1 for a in k]
-    print(k)
+    #k = [a | 0b101010101010101 for a in k]
+    #print(k)
     keys_num = lshift(merge_int(k), 25, bsize=128)
     for i in range(6):
         k.extend(split_int(keys_num, bsize = 8))
@@ -198,7 +213,7 @@ def get_keys_from_file(filepath):
 #check for target of execution
 if __name__ == "__main__":
     keys = get_keys_from_file('res/key.png')
-    blocks = tuple(get_blocks_from_file('res/source.jpg'))
+    blocks = tuple(get_blocks_from_file('res/cat.jpg'))
     cblocks = crypt_blocks(blocks, keys[0])
     enblocks = crypt_blocks(cblocks, keys[1])
 
