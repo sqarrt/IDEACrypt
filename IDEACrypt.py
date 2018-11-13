@@ -1,4 +1,5 @@
 import sys
+from functools import reduce
 
 BLOCK_SIZE = 16
 
@@ -31,7 +32,7 @@ def minv(a, bsize = BLOCK_SIZE):
 
 def split(arr, size):
     res = []
-    parts = len(arr)//size if len(arr)%size == 0 else len(arr)//size+1
+    parts = len(arr)//size if len(arr) % size == 0 else len(arr)//size+1
     for i in range(parts):
         res.append(arr[i*size:(i+1)*size])
     return res
@@ -153,9 +154,14 @@ def crypt_blocks(b, k):
 
 
 def get_keys_from_file(filepath):
-    file = open(filepath, "rb")
-    k = split_int(int.from_bytes(file.read()[:16], byteorder = 'big'), bsize = 8)
-    file.close()
+    file = open(filepath, "rb").read()
+    #splitting bytes by 16 bit and converting to integer for further usability and splitting by 8 numbers again
+    k = split([int.from_bytes(a, byteorder = 'big') for a in split(file, 2)], 8)
+    #we've got now list of lists with size 8, and now we gonna XOR every inner list with each other
+    k = split_int_(reduce(lambda k, a: k ^ merge_int(a), k, 0), 16)
+    #and then to avoid 0-valued key blocks we'll OR every of them by 0b101010101010101
+    k = [a | 1 for a in k]
+    print(k)
     keys_num = lshift(merge_int(k), 25, bsize=128)
     for i in range(6):
         k.extend(split_int(keys_num, bsize = 8))
@@ -191,7 +197,7 @@ def get_keys_from_file(filepath):
 
 #check for target of execution
 if __name__ == "__main__":
-    keys = get_keys_from_file('res/source.jpg')
+    keys = get_keys_from_file('res/key.png')
     blocks = tuple(get_blocks_from_file('res/source.jpg'))
     cblocks = crypt_blocks(blocks, keys[0])
     enblocks = crypt_blocks(cblocks, keys[1])
@@ -212,4 +218,4 @@ if __name__ == "__main__":
         print(list([hex(a) for a in enb]))
         print("\n")
 
-    write_file_from_blocks(enblocks, 'res/res_gif1.jpg')
+    write_file_from_blocks(enblocks, 'res/cat_proceed.jpg')
