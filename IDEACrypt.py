@@ -15,11 +15,15 @@ def rshift(a, n, bsize = BLOCK_SIZE):
 
 
 def mpl(a, b, bsize = BLOCK_SIZE):
-    return (a+b) % (2**bsize)
+    res = (a+b) % (2**bsize)
+    return res
 
 
 def mml(a, b, bsize = BLOCK_SIZE):
-    return (a*b) % (2**bsize+1)
+    a, b = (2 ** bsize if x == 0 else x for x in (a, b))
+    res = (a*b) % (2**bsize + 1)
+    res = 0 if res == 2 ** bsize else res
+    return res
 
 
 def ainv(a, bsize = BLOCK_SIZE):
@@ -129,28 +133,19 @@ def crypt(block, k):
         kd = mml(d[3], k[i][3])
         ke = ka ^ kc
         kf = kb ^ kd
-        """
+
         d[0] = ka ^ mml(mpl(kf, mml(ke, k[i][4])), k[i][5])
         d[1] = kc ^ mml(mpl(kf, mml(ke, k[i][4])), k[i][5])
         d[2] = kb ^ mpl(mml(ke, k[i][4]), mml(mpl(mml(ke, k[i][4]), kf), k[i][5]))
         d[3] = kd ^ mpl(mml(ke, k[i][4]), mml(mpl(mml(ke, k[i][4]), kf), k[i][5]))
-        """
-        ke = mml(ke, k[i][4])
-        kf = mpl(ke, kf)
-        kf = mml(kf, k[i][5])
-        ke = mpl(ke, kf)
-        d[0] = ka ^ kf
-        d[1] = kb ^ ke
-        d[2] = kc ^ kf
-        d[3] = kd ^ ke
 
-        temp = d[1]
-        d[1] = d[2]
-        d[2] = temp
     d1 = mml(d[0], k[8][0])
     d2 = mpl(d[2], k[8][1])
     d3 = mpl(d[1], k[8][2])
     d4 = mml(d[3], k[8][3])
+    for a in [d1, d2, d3, d4]:
+        if a > 2 ** 16:
+            print(a, 9)
     out = list()
     out.append(d1)
     out.append(d2)
@@ -169,14 +164,8 @@ def crypt_blocks(b, k):
 
 def get_keys_from_file(filepath):
     file = open(filepath, "rb").read()
-    #splitting bytes by 16 bit and converting to integer for further usability and splitting by 8 numbers again
     k = split([int.from_bytes(a, byteorder = 'big') for a in split(file, 2)], 8)
-    #we've got now list of lists with size 8, and now we gonna XOR every inner list with each other
     k = split_int_(reduce(lambda k, a: k ^ merge_int(a), k, 0), 16)
-    #k = [a ^ 0x0DAE for a in k]
-    #and then to avoid 0-valued key blocks we'll OR every of them by 0b101010101010101
-    #k = [a | 0b101010101010101 for a in k]
-    #print(k)
     keys_num = lshift(merge_int(k), 25, bsize=128)
     for i in range(6):
         k.extend(split_int(keys_num, bsize = 8))
@@ -212,25 +201,28 @@ def get_keys_from_file(filepath):
 
 #check for target of execution
 if __name__ == "__main__":
-    keys = get_keys_from_file('res/key.png')
-    blocks = tuple(get_blocks_from_file('res/cat.jpg'))
+    keys = get_keys_from_file('res/key.gif')
+    blocks = tuple(get_blocks_from_file('res/source.jpg'))
     cblocks = crypt_blocks(blocks, keys[0])
     enblocks = crypt_blocks(cblocks, keys[1])
 
-    for a in compare_colls(blocks, enblocks):
-        print("check it: "+str(a[0])+" index block \n || keys were:")
-        k = keys[0][0]
-        k.extend(keys[0][1][0:2])
-        print(list([hex(a) for a in k]))
-        b = blocks[a[0]]
-        print(" || block was: ")
-        print(list([hex(a) for a in b]))
-        cb = crypt(b, keys[0])
-        print(" || crypted block was: ")
-        print(list([hex(a) for a in cb]))
-        enb = crypt(cb, keys[1])
-        print(" || encrypted block was: ")
-        print(list([hex(a) for a in enb]))
-        print("\n")
+    if len(compare_colls(blocks, enblocks)) == 0:
+        print("The res is clear")
+    else:
+        for a in compare_colls(blocks, enblocks):
+            print("check it: "+str(a[0])+" index block \n || keys were:")
+            k = keys[0][0]
+            k.extend(keys[0][1][0:2])
+            print(list([hex(a) for a in k]))
+            b = blocks[a[0]]
+            print(" || block was: ")
+            print(list([hex(a) for a in b]))
+            cb = crypt(b, keys[0])
+            print(" || crypted block was: ")
+            print(list([hex(a) for a in cb]))
+            enb = crypt(cb, keys[1])
+            print(" || encrypted block was: ")
+            print(list([hex(a) for a in enb]))
+            print("\n")
 
-    write_file_from_blocks(enblocks, 'res/cat_proceed.jpg')
+        write_file_from_blocks(enblocks, 'res/cat_proceed.jpg')
