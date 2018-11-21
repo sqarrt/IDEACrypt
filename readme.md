@@ -8,7 +8,7 @@ for encrypting:
  - data stream
  - network traffic
 
-![Preview](https://github.com/sqarrt/IDEACrypt/blob/master/res/example.png)
+![Preview](https://github.com/sqarrt/IDEACrypt/blob/master/res/example.png?raw=true)
 
 It works only with bytes. 
 
