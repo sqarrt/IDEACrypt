@@ -17,12 +17,12 @@ class IDEACryptApp(QMainWindow, design.Ui_MainWindow):
 
         self.msg = QMessageBox()
         self.msg.setIcon(QMessageBox.Information)
-        self.msg.setWindowTitle("Успешно!")
+        self.msg.setWindowTitle("Success!")
         self.msg.result()
 
         self.error = QMessageBox()
         self.error.setIcon(QMessageBox.Critical)
-        self.error.setWindowTitle("Ошибка!")
+        self.error.setWindowTitle("Error!")
 
         #listeners
         self.file_load_button.clicked.connect(self.file_load_button_clicked)
@@ -36,13 +36,13 @@ class IDEACryptApp(QMainWindow, design.Ui_MainWindow):
     def file_load_button_clicked(self):
         #file dialog
         self.file_le.clear()
-        self.file = QFileDialog.getOpenFileName(self.window(), "Выберите файл")[0]
+        self.file = QFileDialog.getOpenFileName(self.window(), "Choose file")[0]
         self.file_le.setText(self.file)
 
     def key_load_button_clicked(self):
         #file dialog
         self.key_le.clear()
-        self.key = QFileDialog.getOpenFileName(self.window(), "Выберите файл ключа")[0]
+        self.key = QFileDialog.getOpenFileName(self.window(), "Choose key")[0]
         self.key_le.setText(self.key)
 
     def run(self):
@@ -62,10 +62,11 @@ class IDEACryptApp(QMainWindow, design.Ui_MainWindow):
                     self.progressBar.setValue(80)
                     IDEACrypt.write_file_from_blocks(enblocks, newfile)
                     self.progressBar.setValue(100)
-                    self.msg.setText("Файл зашифрован и сохранён как " + newfile)
+                    self.msg.setText("File is encrypted and saved as " + newfile)
                     self.msg.show()
                 else:
-                    self.error.setText('В процессе шифрования появились битые блоки. Используйте другой ключ!')
+                    self.error.setText("""During the encoding you\'ve got an malformed blocks. \n
+                                       You should use another key!""")
                     self.error.show()
             else:
                 deblocks = IDEACrypt.crypt_blocks(blocks, keys[1])
@@ -76,10 +77,10 @@ class IDEACryptApp(QMainWindow, design.Ui_MainWindow):
                 self.progressBar.setValue(80)
                 IDEACrypt.write_file_from_blocks(deblocks, newfile)
                 self.progressBar.setValue(100)
-                self.msg.setText("Файл расшифрован и сохранён как " + newfile)
+                self.msg.setText("File is decrypted and saved as " + newfile)
                 self.msg.show()
         except FileNotFoundError:
-            self.error.setText('Файл не найден или не выбран!')
+            self.error.setText('File not found or not chosen!')
             self.error.show()
 
     def pb_changed(self):
